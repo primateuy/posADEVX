@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="adevx_pos_z_report.ReportSalesSummary">
+        <div class="pos-receipt">
+            <div class="pos-receipt-contact">
+                <h1>Z-REPORT</h1>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Print Date
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.current_date"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Print Time
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.current_time"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Shop
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="pos.config.name"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Cashier/Seller
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.seller"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    State
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.state"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Started at
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.start_at"/>
+                </span>
+            </div>
+            <t t-if="data.stop_at">
+                <div class="receipt-line">
+                    <span>
+                        Stop at
+                    </span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="data.stop_at"/>
+                    </span>
+                </div>
+            </t>
+            <div class="receipt-line">
+                <span>
+                    Total Orders
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.orders_count"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Cash Register Balance Start
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.cash_register_balance_start"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span>
+                    Sale Total
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.sales_total"/>
+                </span>
+            </div>
+            <t t-if="data.taxes">
+                <div class="pos-receipt-contact">
+                    <h5>TAXES DETAIL</h5>
+                </div>
+                <div class='orderlines'>
+                    <t t-foreach="data['taxes']" t-key="tax" t-as="tax">
+                        <div class="receipt-line">
+                            <t t-esc="tax.tax_name"/>
+                            <span class="pos-receipt-center-align">
+                                <t t-esc="tax.tax_total.toFixed(2)"/>
+                            </span>
+                            <span class="pos-receipt-right-align">
+                                <t t-esc="tax.net_total.toFixed(2)"/>
+                            </span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+            <t t-if="data.reversal_total &lt; 0">
+                <div class="pos-receipt-contact">
+                    <h5><div>Reversal Information</div></h5>
+                </div>
+                <div class="receipt-line">
+                    <span class="amount_total">
+                        Reversal Total
+                    </span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="data.reversal_total"/>
+                    </span>
+                </div>
+                <div class='orderlines' t-if="data.reversal_orders_detail">
+                    <t t-foreach='data.reversal_orders_detail' t-key='order' t-as='order'>
+                        <t t-set="reversal_order_detail" t-value="data.reversal_orders_detail[order]"/>
+                        <div class="receipt-line">
+                            Order Ref
+                            <span class="pos-receipt-right-align">
+                                <t t-esc="order"/>
+                            </span>
+                        </div>
+                        <t t-foreach='reversal_order_detail' t-key='line' t-as='line'>
+                            <div class="receipt-line">
+                                <t t-esc='line.qty' /> <t t-esc='line.product_id' />
+                                <span class="pos-receipt-right-align">
+                                    <t t-esc="line.price_subtotal_incl"/>
+                                </span>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+            </t>
+            <t t-if="data.payments_amount">
+                <div class="pos-receipt-contact">
+                    <h5>PAYMENT METHOD</h5>
+                </div>
+                <div class='orderlines'>
+                    <t t-foreach="data['payments_amount']" t-key="payment_method" t-as="payment_method">
+                        <div class="receipt-line">
+                            <t t-esc="payment_method.name"/>
+                            <span class="pos-receipt-right-align">
+                                <t t-esc="payment_method.amount"/>
+                            </span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+            <t t-if="data.cash_in">
+                <div class="pos-receipt-contact">
+                    <h5>CASH IN</h5>
+                </div>
+                <div class='orderlines'>
+                    <t t-foreach="data['cash_in']" t-key="cash" t-as="cash">
+                        <div class="receipt-line">
+                            <t t-esc="cash.date"/>
+                            <span class="pos-receipt-right-align">
+                                <t t-esc="cash.amount"/>
+                            </span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+            <t t-if="data.cash_out">
+                <div class="pos-receipt-contact">
+                    <h5>CASH OUT</h5>
+                </div>
+                <div class='orderlines'>
+                    <t t-foreach="data['cash_out']" t-key="cash" t-as="cash">
+                        <div class="receipt-line">
+                            <t t-esc="cash.date"/>
+                            <span class="pos-receipt-right-align">
+                                <t t-esc="cash.amount"/>
+                            </span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+<!--            <div class="pos-receipt-contact" t-if="data.users_summary">-->
+<!--                <h5>USERS SUMMARY</h5>-->
+<!--            </div>-->
+<!--            <div class='orderlines' t-if="data.users_summary">-->
+<!--                <t t-foreach="data['users_summary']" t-key="user" t-as="user">-->
+<!--                    <div class="receipt-line">-->
+<!--                        <t t-esc="user"/>-->
+<!--                        <span class="pos-receipt-right-align">-->
+<!--                            <t t-esc="data['users_summary'][user]"/>-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                </t>-->
+<!--            </div>-->
+            <div class="pos-receipt-contact">
+                <h5>SUMMARY</h5>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Refund
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.refund_total"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Discount
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.discounts_total"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Gross
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.gross_total"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Gross Profit
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.gross_profit_total"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Net
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.net_gross_total"/>
+                </span>
+            </div>
+            <div class="receipt-line">
+                <span class="amount_total">
+                    Closing Total
+                </span>
+                <span class="pos-receipt-right-align">
+                    <t t-esc="data.closing_total"/>
+                </span>
+            </div>
+        </div>
+    </t>
+
+</templates>

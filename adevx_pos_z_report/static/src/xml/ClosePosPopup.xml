@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="adevx_pos_z_report.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('modal-footer-right')]" position="inside">
+            <button class="button icon btn btn-lg btn-secondary"
+                    t-if="pos.config.report_sale_summary"
+                    t-on-click="printZReport">
+                Z-Report
+            </button>
+        </xpath>
+    </t>
+
+</templates>
