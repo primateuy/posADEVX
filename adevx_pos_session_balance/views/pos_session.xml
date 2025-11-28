@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="view_inherit_pos_session_tree" model="ir.ui.view">
+            <field name="name">view.inherit.pos.session.tree</field>
+            <field name="model">pos.session</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_session_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='stop_at']" position="after">
+                    <field name="cash_register_balance_end_real" string="Total Balance"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
