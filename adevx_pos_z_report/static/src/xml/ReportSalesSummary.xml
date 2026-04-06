@@ -28,75 +28,57 @@
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Print Date
-                </span>
+                <span t-esc="labels.printDate"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.current_date"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Print Time
-                </span>
+                <span t-esc="labels.printTime"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.current_time"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Shop
-                </span>
+                <span t-esc="labels.shop"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="pos.config.name"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Cashier/Seller
-                </span>
+                <span t-esc="labels.cashierSeller"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.seller"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    State
-                </span>
+                <span t-esc="labels.state"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.state"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Started at
-                </span>
+                <span t-esc="labels.startedAt"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.start_at"/>
                 </span>
             </div>
             <t t-if="data.stop_at">
                 <div class="receipt-line">
-                    <span>
-                        Stop at
-                    </span>
+                    <span t-esc="labels.stopAt"/>
                     <span class="pos-receipt-right-align">
                         <t t-esc="data.stop_at"/>
                     </span>
                 </div>
             </t>
             <div class="receipt-line">
-                <span>
-                    Cash Register Balance Start
-                </span>
+                <span t-esc="labels.cashRegisterBalanceStart"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.cash_register_balance_start"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Sale Total
-                </span>
+                <span t-esc="labels.saleTotal"/>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.sales_total"/>
                 </span>
