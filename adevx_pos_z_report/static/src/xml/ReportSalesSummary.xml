@@ -16,59 +16,47 @@
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Print Date
-                </span>
+                <span>Fecha de impresión</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.current_date"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Cashier/Seller
-                </span>
+                <span>Cajero</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.seller"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    State
-                </span>
+                <span>Estado</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.state"/>
                 </span>
             </div>
             <div class="receipt-line">
-                <span>
-                    Started at
-                </span>
+                <span>Apertura</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.start_at"/>
                 </span>
             </div>
             <t t-if="data.stop_at">
                 <div class="receipt-line">
-                    <span>
-                        Stop at
-                    </span>
+                    <span>Cierre</span>
                     <span class="pos-receipt-right-align">
                         <t t-esc="data.stop_at"/>
                     </span>
                 </div>
             </t>
             <div class="receipt-line">
-                <span>
-                    Cash Register Balance Start
-                </span>
+                <span>Saldo inicial de caja</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.cash_register_balance_start"/>
                 </span>
             </div>
+
+            <!-- Total de ventas -->
             <div class="receipt-line">
-                <span>
-                    Sale Total
-                </span>
+                <span>Total de ventas</span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.sales_total"/>
                 </span>
@@ -88,16 +76,66 @@
                     </t>
                 </div>
             </t>
-            <t t-if="data.cash_in">
+
+            <!-- Pagos manuales (Sello, Cuotas, Importe) -->
+            <t t-if="data.manual_payments and data.manual_payments.length">
                 <div class="pos-receipt-contact">
-                    <h5>INGRESOS DE EFECTIVO</h5>
+                    <h5>TRANSACCIONES MANUALES</h5>
                 </div>
-                <div class='orderlines'>
-                    <t t-foreach="data['cash_in']" t-key="cash" t-as="cash">
-                        <div class="receipt-line">
-                            <t t-esc="cash.date"/>
+                <div class="orderlines">
+                    <t t-foreach="data.manual_payments" t-key="mp_index" t-as="mp">
+                        <div class="receipt-line" style="border-top: 1px dashed #ccc; padding-top: 4px;">
+                            <span><t t-esc="mp.payment_method"/></span>
                             <span class="pos-receipt-right-align">
-                                <t t-esc="cash.amount"/>
+                                <t t-esc="mp.amount"/>
+                            </span>
+                        </div>
+                        <t t-if="mp.sello">
+                            <div class="receipt-line">
+                                <span style="padding-left: 12px;">Sello</span>
+                                <span class="pos-receipt-right-align"><t t-esc="mp.sello"/></span>
+                            </div>
+                        </t>
+                        <t t-if="mp.cuotas">
+                            <div class="receipt-line">
+                                <span style="padding-left: 12px;">Cuotas</span>
+                                <span class="pos-receipt-right-align"><t t-esc="mp.cuotas"/></span>
+                            </div>
+                        </t>
+                        <t t-if="mp.ticket">
+                            <div class="receipt-line">
+                                <span style="padding-left: 12px;">Ticket</span>
+                                <span class="pos-receipt-right-align"><t t-esc="mp.ticket"/></span>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+            </t>
+
+            <!-- Movimientos de caja (IN / OUT) -->
+            <t t-if="data.cash_movements and data.cash_movements.length">
+                <div class="pos-receipt-contact">
+                    <h5>MOVIMIENTOS DE CAJA</h5>
+                </div>
+                <div class="orderlines">
+                    <t t-foreach="data.cash_movements" t-key="cm_index" t-as="cm">
+                        <div class="receipt-line">
+                            <span class="text-wrap" style="max-width: 70%;">
+                                <t t-if="cm.amount >= 0">
+                                    <span style="color: green;">▲ </span>
+                                </t>
+                                <t t-else="">
+                                    <span style="color: red;">▼ </span>
+                                </t>
+                                <t t-esc="cm.reason"/>
+                            </span>
+                            <span class="pos-receipt-right-align">
+                                <t t-if="cm.amount >= 0">
+                                    +<t t-esc="cm.amount"/>
+                                </t>
+                                <t t-else="">
+                                    <t t-esc="cm.amount"/>
+                                </t>
                             </span>
                         </div>
                     </t>
@@ -112,6 +150,27 @@
                     <t t-esc="data.closing_total"/>
                 </span>
             </div>
+
+            <!-- Diferencia de caja -->
+            <t t-if="data.cash_register_difference">
+                <div class="receipt-line" style="border-top: 1px solid #ccc; margin-top: 4px; padding-top: 4px;">
+                    <span><strong>Diferencia</strong></span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="data.cash_register_difference"/>
+                    </span>
+                </div>
+            </t>
+
+            <!-- Nota de cierre -->
+            <t t-if="data.closing_notes">
+                <div class="pos-receipt-contact">
+                    <h5>NOTA DE CIERRE</h5>
+                </div>
+                <div class="receipt-line">
+                    <span class="text-wrap"><t t-esc="data.closing_notes"/></span>
+                </div>
+            </t>
+
         </div>
     </t>
 

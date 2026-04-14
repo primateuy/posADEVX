@@ -1,3 +1,4 @@
+import json as json_module
 from pytz import timezone, UTC
 from datetime import datetime, date
 from odoo import api, fields, models, _
@@ -9,44 +10,32 @@ class PosSession(models.Model):
 
     def get_current_date(self):
         if self.env.user and self.env.user.tz:
-            tz = self.env.user.tz
-            tz = timezone(tz)
+            tz = timezone(self.env.user.tz)
         else:
             tz = UTC
-        if tz:
-            c_time = datetime.now(tz)
-            return c_time.strftime('%d/%m/%Y')
-        else:
-            return date.today().strftime('%d/%m/%Y')
+        c_time = datetime.now(tz)
+        return c_time.strftime('%d/%m/%Y')
 
     def get_current_time(self):
         if self.env.user and self.env.user.tz:
-            tz = self.env.user.tz
-            tz = timezone(tz)
+            tz = timezone(self.env.user.tz)
         else:
             tz = UTC
-        if tz:
-            c_time = datetime.now(tz)
-            return c_time.strftime('%I:%M %p')
-        else:
-            return datetime.now().strftime('%I:%M:%S %p')
+        c_time = datetime.now(tz)
+        return c_time.strftime('%H:%M')
 
     def get_cash_in_out(self):
-        account_bank_statement_lines = self.env['account.bank.statement.line'].search([
-            ('pos_session_id', '=', self.id)])
-        cash_in_out = {}
-        for absl in account_bank_statement_lines:
-            if absl.amount > 0:
-                cash_in_out.setdefault('cash_in', []).append({
-                    'amount': absl.amount,
-                    'date': absl.create_date
-                })
-            else:
-                cash_in_out.setdefault('cash_out', []).append({
-                    'amount': absl.amount,
-                    'date': absl.create_date
-                })
-        return cash_in_out
+        """Retorna todos los movimientos de caja (IN y OUT) con razón/concepto."""
+        movements = []
+        for line in self.statement_line_ids.sorted('create_date'):
+            # payment_ref tiene formato: "SessionName-Tipo-Razón" o solo la razón
+            reason = line.payment_ref or ''
+            movements.append({
+                'amount': line.amount,
+                'reason': reason,
+                'date': str(line.date) if line.date else '',
+            })
+        return movements
 
     def get_payments_amount(self):
         payments_amount = []
@@ -60,10 +49,50 @@ class PosSession(models.Model):
                 'amount': 0
             }
             for payment in payments:
-                amount = payment.amount
-                journal_dict['amount'] += amount
+                journal_dict['amount'] += payment.amount
             payments_amount.append(journal_dict)
         return payments_amount
+
+    def get_manual_payments(self):
+        """Retorna pagos manuales con Sello, Cuotas e Importe."""
+        manual_payments = []
+        # Verificar que el módulo pos_forum_manual_payment está instalado
+        if 'manual_payment_values_json' not in self.env['pos.payment']._fields:
+            return manual_payments
+        for order in self.order_ids:
+            for payment in order.payment_ids:
+                if not payment.manual_payment_values_json:
+                    continue
+                try:
+                    manual_vals = json_module.loads(payment.manual_payment_values_json)
+                except (ValueError, TypeError):
+                    manual_vals = {}
+                tx = payment.payment_transaction_id if payment.payment_transaction_id else None
+                is_manual = tx and getattr(tx, 'is_pos_manual', False)
+                if not is_manual and not manual_vals:
+                    continue
+                sello = ''
+                cuotas = ''
+                ticket = ''
+                if tx:
+                    sello = getattr(tx, 'manual_stamp', '') or getattr(tx, 'acquirer', '') or ''
+                    ticket = getattr(tx, 'manual_ticket_number', '') or getattr(tx, 'ticket_number', '') or ''
+                # Cuotas puede estar en el JSON con distintos nombres
+                cuotas = (
+                    manual_vals.get('cuotas') or
+                    manual_vals.get('installments') or
+                    manual_vals.get('nro_cuotas') or
+                    manual_vals.get('quota') or
+                    ''
+                )
+                manual_payments.append({
+                    'payment_method': payment.payment_method_id.name,
+                    'amount': payment.amount,
+                    'sello': sello,
+                    'cuotas': str(cuotas) if cuotas else '',
+                    'ticket': ticket,
+                })
+        return manual_payments
 
     def get_total_sales(self):
         total_price = 0.0
@@ -167,22 +196,26 @@ class PosSession(models.Model):
     def build_sessions_report(self):
         vals = {}
         session_state = {
-            'new_session': _('New Session'),
-            'opening_control': _('Opening Control'),
-            'opened': _('In Progress'),
-            'closing_control': _('Closing Control'),
-            'closed': _('Closed & Posted'),
+            'new_session': _('Nueva Sesión'),
+            'opening_control': _('Control de Apertura'),
+            'opened': _('En Progreso'),
+            'closing_control': _('Control de Cierre'),
+            'closed': _('Cerrada y Publicada'),
         }
         for session in self:
             session_report = {}
             session_report['name'] = session.name
             session_report['current_date'] = session.get_current_date()
             session_report['current_time'] = session.get_current_time()
-            session_report['state'] = session_state[session.state]
+            session_report['state'] = session_state.get(session.state, session.state)
             session_report['start_at'] = session.start_at
             session_report['stop_at'] = session.stop_at
+            # Cajero: usar nombre del usuario de Odoo (el frontend sobreescribirá con el empleado real)
             session_report['seller'] = session.user_id.name
             session_report['cash_register_balance_start'] = session.cash_register_balance_start
+            session_report['cash_register_balance_end_real'] = session.cash_register_balance_end_real
+            session_report['cash_register_difference'] = session.cash_register_difference
+            session_report['closing_notes'] = session.closing_notes or ''
             session_report['orders_count'] = len(session.order_ids)
             session_report['sales_total'] = session.get_total_sales()
             session_report['reversal_total'] = session.get_total_reversal()
@@ -190,14 +223,19 @@ class PosSession(models.Model):
             session_report['taxes'] = session.get_vat_tax()
             session_report['taxes_total'] = session.get_total_tax()
             session_report['discounts_total'] = session.get_total_discount()
-            # session_report['users_summary'] = session.get_sale_summary_by_user()
             session_report['refund_total'] = session.get_total_refund()
             session_report['gross_total'] = session.get_total_first()
             session_report['gross_profit_total'] = session.get_gross_total()
             session_report['net_gross_total'] = session.get_gross_total() - session.get_total_tax()
-            session_report['closing_total'] = session.cash_register_balance_end_real
+            # closing_total: saldo teórico esperado (apertura + cobros - salidas)
+            session_report['closing_total'] = session.cash_register_balance_end
             session_report['payments_amount'] = session.get_payments_amount()
-            session_report['cash_in'] = session.get_cash_in_out().get('cash_in', {})
-            session_report['cash_out'] = session.get_cash_in_out().get('cash_out', {})
+            # Movimientos de caja (IN y OUT combinados)
+            cash_movements = session.get_cash_in_out()
+            session_report['cash_movements'] = cash_movements
+            session_report['cash_in'] = [m for m in cash_movements if m['amount'] > 0]
+            session_report['cash_out'] = [m for m in cash_movements if m['amount'] < 0]
+            # Pagos manuales (Sello, Cuotas, Importe)
+            session_report['manual_payments'] = session.get_manual_payments()
             vals[session.id] = session_report
         return vals

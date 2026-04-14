@@ -17,11 +17,18 @@ class ZReportButton extends Component {
     }
 
     async printZReport() {
+        // Obtener nombre del cajero actual desde el frontend (empleado seleccionado)
+        const cashierName = this.pos.get_cashier()?.name || '';
         let results = await this.orm.call("pos.session", "build_sessions_report", [[this.pos.pos_session.id]]);
+        const data = results[this.pos.pos_session.id];
+        // Sobreescribir con el cajero real del frontend
+        if (cashierName) {
+            data.seller = cashierName;
+        }
         const report = renderToElement("adevx_pos_z_report.ReportSalesSummary", Object.assign({}, {
-            pos: this.pos, data: results[this.pos.pos_session.id]
+            pos: this.pos, data: data
         }));
-        return await this.printer.printHtml(report, {webPrintFallback: true});
+        return await this.printer.printHtml(report, { webPrintFallback: true });
     }
 }
 
