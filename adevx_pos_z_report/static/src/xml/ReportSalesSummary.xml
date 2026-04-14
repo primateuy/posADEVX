@@ -25,14 +25,6 @@
             </div>
             <div class="receipt-line">
                 <span>
-                    Print Time
-                </span>
-                <span class="pos-receipt-right-align">
-                    <t t-esc="data.current_time"/>
-                </span>
-            </div>
-            <div class="receipt-line">
-                <span>
                     Cashier/Seller
                 </span>
                 <span class="pos-receipt-right-align">
