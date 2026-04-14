@@ -54,43 +54,31 @@ class PosSession(models.Model):
         return payments_amount
 
     def get_manual_payments(self):
-        """Retorna pagos manuales con Sello, Cuotas e Importe."""
+        """Retorna pagos manuales leyendo desde payment.transaction (is_pos_manual=True).
+
+        Campos leídos del modelo payment.transaction:
+          - manual_stamp       → Sello (ya viene como nombre, ej: "VISA")
+          - installments       → Cuotas
+          - manual_ticket_number → Ticket
+        Solo se incluyen pagos cuya transacción vinculada tiene is_pos_manual=True.
+        """
         manual_payments = []
-        # Verificar que el módulo pos_forum_manual_payment está instalado
-        if 'manual_payment_values_json' not in self.env['pos.payment']._fields:
+        # Verificar que payment.transaction tiene los campos del módulo pos_forum_manual_payment
+        tx_fields = self.env['payment.transaction']._fields
+        if 'is_pos_manual' not in tx_fields:
             return manual_payments
+
         for order in self.order_ids:
             for payment in order.payment_ids:
-                if not payment.manual_payment_values_json:
+                tx = payment.payment_transaction_id
+                if not tx or not tx.is_pos_manual:
                     continue
-                try:
-                    manual_vals = json_module.loads(payment.manual_payment_values_json)
-                except (ValueError, TypeError):
-                    manual_vals = {}
-                tx = payment.payment_transaction_id if payment.payment_transaction_id else None
-                is_manual = tx and getattr(tx, 'is_pos_manual', False)
-                if not is_manual and not manual_vals:
-                    continue
-                sello = ''
-                cuotas = ''
-                ticket = ''
-                if tx:
-                    sello = getattr(tx, 'manual_stamp', '') or getattr(tx, 'acquirer', '') or ''
-                    ticket = getattr(tx, 'manual_ticket_number', '') or getattr(tx, 'ticket_number', '') or ''
-                # Cuotas puede estar en el JSON con distintos nombres
-                cuotas = (
-                    manual_vals.get('cuotas') or
-                    manual_vals.get('installments') or
-                    manual_vals.get('nro_cuotas') or
-                    manual_vals.get('quota') or
-                    ''
-                )
                 manual_payments.append({
                     'payment_method': payment.payment_method_id.name,
                     'amount': payment.amount,
-                    'sello': sello,
-                    'cuotas': str(cuotas) if cuotas else '',
-                    'ticket': ticket,
+                    'sello': tx.manual_stamp or '',
+                    'cuotas': str(tx.installments) if tx.installments else '',
+                    'ticket': tx.manual_ticket_number or '',
                 })
         return manual_payments
 
