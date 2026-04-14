@@ -16,18 +16,6 @@
                 </span>
             </div>
             <div class="receipt-line">
-                <span>Centro de Caja</span>
-                <span class="pos-receipt-right-align">
-                    <t t-esc="pos.config.name"/>
-                </span>
-            </div>
-            <div class="receipt-line">
-                <span>Caja Número</span>
-                <span class="pos-receipt-right-align">
-                    <t t-esc="data.name"/>
-                </span>
-            </div>
-            <div class="receipt-line">
                 <span>
                     Print Date
                 </span>
@@ -41,14 +29,6 @@
                 </span>
                 <span class="pos-receipt-right-align">
                     <t t-esc="data.current_time"/>
-                </span>
-            </div>
-            <div class="receipt-line">
-                <span>
-                    Shop
-                </span>
-                <span class="pos-receipt-right-align">
-                    <t t-esc="pos.config.name"/>
                 </span>
             </div>
             <div class="receipt-line">
