@@ -5,8 +5,9 @@
         <xpath expr="//div[hasclass('modal-footer-right')]" position="inside">
             <button class="button icon btn btn-lg btn-secondary"
                     t-if="pos.config.report_sale_summary"
-                    t-on-click="printZReport"
-                    t-esc="zReportButtonLabel"/>
+                    t-on-click="printZReport">
+                Z-Report
+            </button>
         </xpath>
     </t>
 

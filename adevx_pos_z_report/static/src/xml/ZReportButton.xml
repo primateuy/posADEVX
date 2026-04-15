@@ -4,7 +4,7 @@
     <t t-name="adevx_pos_z_report.ZReportButton" owl="1">
         <div class="control-button o_pricelist_button btn btn-light rounded-0 fw-bolder" t-on-click="printZReport">
             <i class="fa fa-line-chart"/>
-            <span t-esc="zReportControlLabel"/>
+            Z Report
         </div>
     </t>
 
