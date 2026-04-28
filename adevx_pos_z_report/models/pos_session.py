@@ -14,14 +14,29 @@ class PosSession(models.Model):
 
     def generate_z_report_pdf(self, cashier_name=None):
         """Genera el PDF del Reporte Z server-side y lo guarda en el campo binario."""
+        REPORT_REF = 'adevx_pos_z_report.action_report_pos_z'
         for session in self:
             ctx = dict(self._context)
             if cashier_name:
                 ctx['z_report_cashier'] = cashier_name
-            pdf_content, _ = self.env['ir.actions.report'].with_context(ctx)._render_qweb_pdf(
-                'adevx_pos_z_report.action_report_pos_z',
-                res_ids=[session.id],
+            report_obj = self.env['ir.actions.report'].with_context(ctx)
+
+            # Renderizar a HTML y pasar el documento completo a wkhtmltopdf
+            # para evitar el path de _prepare_html que produce fragmentos sin charset.
+            html, _ = report_obj._render_qweb_html(REPORT_REF, [session.id])
+            if isinstance(html, bytes):
+                html = html.decode('utf-8')
+
+            # wkhtmltopdf ignora <meta charset> solo; necesita http-equiv para UTF-8
+            html = html.replace(
+                '<meta charset="utf-8"/>',
+                '<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>'
+                '<meta charset="utf-8"/>',
+                1,
             )
+
+            pdf_content = report_obj._run_wkhtmltopdf([html], report_ref=REPORT_REF)
+
             session.write({
                 'z_report_pdf': base64.b64encode(pdf_content),
                 'z_report_filename': 'reporte_z_%s.pdf' % (session.name or session.id),
