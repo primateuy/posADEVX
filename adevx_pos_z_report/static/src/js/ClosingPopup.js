@@ -81,6 +81,18 @@ patch(ClosePosPopup.prototype, {
             if (!response.successful) {
                 return this.handleClosingError(response);
             }
+            // Guardar PDF del Reporte Z en el backend
+            try {
+                const cashierName = this.pos.get_cashier()?.name || '';
+                await this.orm.call(
+                    "pos.session",
+                    "generate_z_report_pdf",
+                    [[this.pos.pos_session.id]],
+                    { cashier_name: cashierName }
+                );
+            } catch (pdfError) {
+                console.error("Error al guardar el PDF del Reporte Z:", pdfError);
+            }
             // Auto-imprimir Reporte Z si está habilitado
             if (this.pos.config.report_sale_summary) {
                 try {

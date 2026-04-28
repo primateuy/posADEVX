@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_pos_z_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc.build_sessions_report()[doc.id]"/>
+                <t t-set="seller" t-value="doc._context.get('z_report_cashier') or data['seller']"/>
+                <div class="page" style="font-family: monospace; max-width: 380px; margin: 0 auto; padding: 20px; font-size: 12px;">
+
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <h2 style="margin: 0;">REPORTE Z</h2>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <strong>SUCURSAL</strong>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td>Sucursal</td>
+                            <td style="text-align: right;"><t t-esc="doc.config_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td>Fecha de impresión</td>
+                            <td style="text-align: right;"><t t-esc="data['current_date']"/></td>
+                        </tr>
+                        <tr>
+                            <td>Cajero</td>
+                            <td style="text-align: right;"><t t-esc="seller"/></td>
+                        </tr>
+                        <tr>
+                            <td>Estado</td>
+                            <td style="text-align: right;"><t t-esc="data['state']"/></td>
+                        </tr>
+                        <tr>
+                            <td>Apertura</td>
+                            <td style="text-align: right;"><t t-esc="data['start_at']"/></td>
+                        </tr>
+                        <t t-if="data['stop_at']">
+                            <tr>
+                                <td>Cierre</td>
+                                <td style="text-align: right;"><t t-esc="data['stop_at']"/></td>
+                            </tr>
+                        </t>
+                        <tr>
+                            <td>Saldo inicial de caja</td>
+                            <td style="text-align: right;">
+                                <t t-esc="'%.2f' % (data['cash_register_balance_start'] or 0.0)"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total de ventas</td>
+                            <td style="text-align: right;">
+                                <t t-esc="'%.2f' % (data['sales_total'] or 0.0)"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <t t-if="data['payments_amount']">
+                        <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">RESUMEN POR VALOR</div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <t t-foreach="data['payments_amount']" t-as="pm">
+                                <tr>
+                                    <td><t t-esc="pm['name']"/></td>
+                                    <td style="text-align: right;">
+                                        <t t-esc="'%.2f' % (pm['amount'] or 0.0)"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
+                    </t>
+
+                    <t t-if="data['manual_payments']">
+                        <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">TRANSACCIONES MANUALES</div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <t t-foreach="data['manual_payments']" t-as="mp">
+                                <tr style="border-top: 1px dashed #ccc;">
+                                    <td><t t-esc="mp['payment_method']"/></td>
+                                    <td style="text-align: right;">
+                                        <t t-esc="'%.2f' % (mp['amount'] or 0.0)"/>
+                                    </td>
+                                </tr>
+                                <t t-if="mp['sello']">
+                                    <tr>
+                                        <td style="padding-left: 12px;">Sello</td>
+                                        <td style="text-align: right;"><t t-esc="mp['sello']"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="mp['cuotas']">
+                                    <tr>
+                                        <td style="padding-left: 12px;">Cuotas</td>
+                                        <td style="text-align: right;"><t t-esc="mp['cuotas']"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="mp['ticket']">
+                                    <tr>
+                                        <td style="padding-left: 12px;">Ticket</td>
+                                        <td style="text-align: right;"><t t-esc="mp['ticket']"/></td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </table>
+                    </t>
+
+                    <t t-if="data['cash_movements']">
+                        <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">MOVIMIENTOS DE CAJA</div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <t t-foreach="data['cash_movements']" t-as="cm">
+                                <tr>
+                                    <td>
+                                        <t t-if="cm['amount'] >= 0">▲ </t>
+                                        <t t-else="">▼ </t>
+                                        <t t-esc="cm['reason']"/>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <t t-if="cm['amount'] >= 0">+</t>
+                                        <t t-esc="'%.2f' % (cm['amount'] or 0.0)"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
+                    </t>
+
+                    <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">SALDO FINAL DE EFECTIVO</div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td>Saldo final de Efectivo</td>
+                            <td style="text-align: right;">
+                                <t t-esc="'%.2f' % (data['closing_total'] or 0.0)"/>
+                            </td>
+                        </tr>
+                        <t t-if="data['cash_register_difference']">
+                            <tr style="border-top: 1px solid #ccc;">
+                                <td><strong>Diferencia</strong></td>
+                                <td style="text-align: right;">
+                                    <t t-esc="'%.2f' % (data['cash_register_difference'] or 0.0)"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </table>
+
+                    <t t-if="data['closing_notes']">
+                        <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">NOTA DE CIERRE</div>
+                        <div><t t-esc="data['closing_notes']"/></div>
+                    </t>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_pos_z" model="ir.actions.report">
+        <field name="name">Reporte Z</field>
+        <field name="model">pos.session</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">adevx_pos_z_report.report_pos_z_report_template</field>
+        <field name="report_file">adevx_pos_z_report.report_pos_z_report_template</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+</odoo>

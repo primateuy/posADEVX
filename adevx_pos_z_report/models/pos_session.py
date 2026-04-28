@@ -1,3 +1,4 @@
+import base64
 import json as json_module
 from pytz import timezone, UTC
 from datetime import datetime, date
@@ -7,6 +8,25 @@ from odoo.exceptions import UserError
 
 class PosSession(models.Model):
     _inherit = "pos.session"
+
+    z_report_pdf = fields.Binary('Reporte Z PDF', attachment=True, readonly=True)
+    z_report_filename = fields.Char('Nombre Reporte Z', readonly=True)
+
+    def generate_z_report_pdf(self, cashier_name=None):
+        """Genera el PDF del Reporte Z server-side y lo guarda en el campo binario."""
+        for session in self:
+            ctx = dict(self._context)
+            if cashier_name:
+                ctx['z_report_cashier'] = cashier_name
+            pdf_content, _ = self.env['ir.actions.report'].with_context(ctx)._render_qweb_pdf(
+                'adevx_pos_z_report.action_report_pos_z',
+                res_ids=[session.id],
+            )
+            session.write({
+                'z_report_pdf': base64.b64encode(pdf_content),
+                'z_report_filename': 'reporte_z_%s.pdf' % (session.name or session.id),
+            })
+        return True
 
     def get_current_date(self):
         if self.env.user and self.env.user.tz:

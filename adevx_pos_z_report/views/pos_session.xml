@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_inherit_pos_session_form_z_report" model="ir.ui.view">
+            <field name="name">view.inherit.pos.session.form.z.report</field>
+            <field name="model">pos.session</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header/field[@name='state']" position="before">
+                    <button name="generate_z_report_pdf" type="object" string="Generar Reporte Z" invisible="state != 'closed' or z_report_pdf"/>
+                </xpath>
+
+                <xpath expr="//field[@name='cash_register_balance_end_real']" position="after">
+                    <field name="z_report_pdf" widget="binary" filename="z_report_filename" string="Reporte Z" readonly="1"/>
+                    <field name="z_report_filename" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

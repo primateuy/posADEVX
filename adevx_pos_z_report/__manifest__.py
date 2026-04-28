@@ -13,8 +13,11 @@
 
     'depends': ['point_of_sale'],
     'data': [
+        # Reports
+        'reports/pos_z_report.xml',
         # Views
         'views/pos_config.xml',
+        'views/pos_session.xml',
     ],
     "assets": {
         "point_of_sale._assets_pos": [
