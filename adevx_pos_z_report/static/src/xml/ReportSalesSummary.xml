@@ -115,7 +115,7 @@
             <!-- Movimientos de caja (IN / OUT) -->
             <t t-if="data.cash_movements and data.cash_movements.length">
                 <div class="pos-receipt-contact">
-                    <h5>MOVIMIENTOS DE CAJA</h5>
+                    <h5>MOVIMIENTOS DE EFECTIVO</h5>
                 </div>
                 <div class="orderlines">
                     <t t-foreach="data.cash_movements" t-key="cm_index" t-as="cm">
@@ -144,19 +144,20 @@
             <div class="pos-receipt-contact">
                 <h5>SALDO FINAL DE EFECTIVO</h5>
             </div>
-            <div class="receipt-line">
-                <span>Saldo final de Efectivo</span>
-                <span class="pos-receipt-right-align">
-                    <t t-esc="data.closing_total"/>
-                </span>
-            </div>
-
+            <t t-if="!data.cash_register_difference">
+                <div class="receipt-line">
+                    <span>Saldo final de Efectivo</span>
+                    <span class="pos-receipt-right-align">
+                        <t t-esc="data.closing_total"/>
+                    </span>
+                </div>
+            </t>
             <!-- Diferencia de caja -->
             <t t-if="data.cash_register_difference">
                 <div class="receipt-line" style="border-top: 1px solid #ccc; margin-top: 4px; padding-top: 4px;">
-                    <span><strong>Diferencia</strong></span>
+                    <span><strong>Saldo final de Efectivo</strong></span>
                     <span class="pos-receipt-right-align">
-                        <t t-esc="data.cash_register_difference"/>
+                        <t t-esc="data.closing_total + data.cash_register_difference"/>
                     </span>
                 </div>
             </t>
