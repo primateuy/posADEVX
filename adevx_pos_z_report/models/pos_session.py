@@ -43,21 +43,86 @@ class PosSession(models.Model):
             })
         return True
 
-    def get_current_date(self):
+    def _get_user_tz(self):
+        """Obtiene la zona horaria del usuario actual.
+
+        Returns:
+            pytz.timezone: zona horaria configurada en el usuario, o UTC
+                como fallback si no tiene una definida.
+        """
         if self.env.user and self.env.user.tz:
-            tz = timezone(self.env.user.tz)
-        else:
-            tz = UTC
-        c_time = datetime.now(tz)
+            return timezone(self.env.user.tz)
+        return UTC
+
+    def _localize_naive_utc(self, dt):
+        """Convierte un datetime naive en UTC a la timezone del usuario.
+
+        Los campos Datetime de Odoo (ej. start_at, stop_at) se devuelven
+        naive y en UTC. Sin esta conversión, el valor mostrado queda
+        desfasado respecto de la hora local del usuario.
+
+        Args:
+            dt (datetime): datetime naive en UTC. Puede ser None/False.
+
+        Returns:
+            datetime: datetime aware convertido a la timezone del usuario,
+                o None si dt es falsy.
+        """
+        if not dt:
+            return None
+        return UTC.localize(dt).astimezone(self._get_user_tz())
+
+    def get_current_date(self):
+        c_time = datetime.now(self._get_user_tz())
         return c_time.strftime('%d/%m/%Y')
 
     def get_current_time(self):
-        if self.env.user and self.env.user.tz:
-            tz = timezone(self.env.user.tz)
-        else:
-            tz = UTC
-        c_time = datetime.now(tz)
+        c_time = datetime.now(self._get_user_tz())
         return c_time.strftime('%H:%M')
+
+    def get_start_at(self):
+        """Devuelve la fecha/hora de apertura de la sesión, localizada.
+
+        Convierte session.start_at (naive UTC) a la timezone del usuario
+        y lo formatea en día/mes/año, evitando tanto el formato ISO por
+        defecto como el desfase horario del valor crudo del campo.
+
+        Returns:
+            str: fecha/hora de apertura en formato '%d/%m/%Y %H:%M', o ''
+                si no hay apertura registrada.
+        """
+        dt = self._localize_naive_utc(self.start_at)
+        return dt.strftime('%d/%m/%Y %H:%M') if dt else ''
+
+    def get_stop_at(self):
+        """Devuelve la fecha/hora de cierre de la sesión, localizada.
+
+        Ver get_start_at para el criterio de conversión de timezone y formato.
+
+        Returns:
+            str: fecha/hora de cierre en formato '%d/%m/%Y %H:%M', o '' si
+                la sesión aún no fue cerrada.
+        """
+        dt = self._localize_naive_utc(self.stop_at)
+        return dt.strftime('%d/%m/%Y %H:%M') if dt else ''
+
+    def format_currency(self, amount):
+        """Formatea un importe con el estilo monetario usado en los reportes.
+
+        Usa punto como separador de miles, coma como separador decimal y
+        antepone el símbolo $. Ej: 1234.5 -> '$ 1.234,50'; -10 -> '-$ 10,00'.
+
+        Args:
+            amount (float): importe a formatear. None/False se trata como 0.0.
+
+        Returns:
+            str: importe formateado.
+        """
+        amount = amount or 0.0
+        sign = '-' if amount < 0 else ''
+        text = '{:,.2f}'.format(abs(amount))
+        text = text.replace(',', '_').replace('.', ',').replace('_', '.')
+        return '%s$ %s' % (sign, text)
 
     def get_cash_in_out(self):
         """Retorna todos los movimientos de caja (IN y OUT) con razón/concepto."""
@@ -67,6 +132,7 @@ class PosSession(models.Model):
             reason = line.payment_ref or ''
             movements.append({
                 'amount': line.amount,
+                'amount_fmt': self.format_currency(line.amount),
                 'reason': reason,
                 'date': str(line.date) if line.date else '',
             })
@@ -85,6 +151,7 @@ class PosSession(models.Model):
             }
             for payment in payments:
                 journal_dict['amount'] += payment.amount
+            journal_dict['amount_fmt'] = self.format_currency(journal_dict['amount'])
             payments_amount.append(journal_dict)
         return payments_amount
 
@@ -111,6 +178,7 @@ class PosSession(models.Model):
                 manual_payments.append({
                     'payment_method': payment.payment_method_id.name,
                     'amount': payment.amount,
+                    'amount_fmt': self.format_currency(payment.amount),
                     'sello': tx.manual_stamp or '',
                     'cuotas': str(tx.installments) if tx.installments else '',
                     'ticket': tx.manual_ticket_number or '',
@@ -120,7 +188,7 @@ class PosSession(models.Model):
     def get_total_sales(self):
         total_price = 0.0
         for order in self.order_ids:
-            if order.amount_paid >= 0:
+        #Comente el if para que en el total también se resten las notas de credito
                 total_price += sum([(line.qty * line.price_unit) for line in order.lines])
         return total_price
 
@@ -231,16 +299,18 @@ class PosSession(models.Model):
             session_report['current_date'] = session.get_current_date()
             session_report['current_time'] = session.get_current_time()
             session_report['state'] = session_state.get(session.state, session.state)
-            session_report['start_at'] = session.start_at
-            session_report['stop_at'] = session.stop_at
+            session_report['start_at'] = session.get_start_at()
+            session_report['stop_at'] = session.get_stop_at()
             # Cajero: usar nombre del usuario de Odoo (el frontend sobreescribirá con el empleado real)
             session_report['seller'] = session.user_id.name
-            session_report['cash_register_balance_start'] = session.cash_register_balance_start
+            session_report['cash_register_balance_start'] = session.format_currency(session.cash_register_balance_start)
             session_report['cash_register_balance_end_real'] = session.cash_register_balance_end_real
-            session_report['cash_register_difference'] = session.cash_register_difference
+            session_report['has_cash_difference'] = bool(session.cash_register_difference)
+            session_report['cash_register_difference'] = session.format_currency(
+                session.cash_register_difference)
             session_report['closing_notes'] = session.closing_notes or ''
             session_report['orders_count'] = len(session.order_ids)
-            session_report['sales_total'] = session.get_total_sales()
+            session_report['sales_total'] = session.format_currency(session.get_total_sales())
             session_report['reversal_total'] = session.get_total_reversal()
             session_report['reversal_orders_detail'] = session.get_reversal_orders_detail()
             session_report['taxes'] = session.get_vat_tax()
@@ -251,7 +321,11 @@ class PosSession(models.Model):
             session_report['gross_profit_total'] = session.get_gross_total()
             session_report['net_gross_total'] = session.get_gross_total() - session.get_total_tax()
             # closing_total: saldo teórico esperado (apertura + cobros - salidas)
-            session_report['closing_total'] = session.cash_register_balance_end
+            session_report['closing_total'] = session.format_currency(session.cash_register_balance_end)
+            # closing_total_final: saldo teórico + diferencia de caja, ya sumado en Python
+            # para que el template no tenga que sumar valores ya formateados como texto.
+            closing_total_final = session.cash_register_balance_end + session.cash_register_difference
+            session_report['closing_total_final'] = session.format_currency(closing_total_final)
             session_report['payments_amount'] = session.get_payments_amount()
             # Movimientos de caja (IN y OUT combinados)
             cash_movements = session.get_cash_in_out()
