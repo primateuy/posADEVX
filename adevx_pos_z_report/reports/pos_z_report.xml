@@ -11,9 +11,6 @@
                     <div style="text-align: center; margin-bottom: 8px;">
                         <h2 style="margin: 0;">REPORTE Z</h2>
                     </div>
-                    <div style="text-align: center; margin-bottom: 12px;">
-                        <strong>SUCURSAL</strong>
-                    </div>
 
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
@@ -45,13 +42,13 @@
                         <tr>
                             <td>Saldo inicial de caja</td>
                             <td style="text-align: right;">
-                                <t t-esc="'%.2f' % (data['cash_register_balance_start'] or 0.0)"/>
+                                <t t-esc="data['cash_register_balance_start']"/>
                             </td>
                         </tr>
                         <tr>
                             <td>Total de ventas</td>
                             <td style="text-align: right;">
-                                <t t-esc="'%.2f' % (data['sales_total'] or 0.0)"/>
+                                <t t-esc="data['sales_total']"/>
                             </td>
                         </tr>
                     </table>
@@ -63,7 +60,7 @@
                                 <tr>
                                     <td><t t-esc="pm['name']"/></td>
                                     <td style="text-align: right;">
-                                        <t t-esc="'%.2f' % (pm['amount'] or 0.0)"/>
+                                        <t t-esc="pm['amount_fmt']"/>
                                     </td>
                                 </tr>
                             </t>
@@ -71,32 +68,80 @@
                     </t>
 
                     <t t-if="data['manual_payments']">
+                        <!-- Pagos manuales (Sello, Cuotas, Importe), agrupados por método de pago -->
                         <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">TRANSACCIONES MANUALES</div>
                         <table style="width: 100%; border-collapse: collapse;">
+                            <t t-set="pos_manual_flag" t-value="False"/>
                             <t t-foreach="data['manual_payments']" t-as="mp">
-                                <tr style="border-top: 1px dashed #ccc;">
-                                    <td><t t-esc="mp['payment_method']"/></td>
-                                    <td style="text-align: right;">
-                                        <t t-esc="'%.2f' % (mp['amount'] or 0.0)"/>
-                                    </td>
-                                </tr>
-                                <t t-if="mp['sello']">
-                                    <tr>
-                                        <td style="padding-left: 12px;">Sello</td>
-                                        <td style="text-align: right;"><t t-esc="mp['sello']"/></td>
-                                    </tr>
+                                <t t-if="mp['payment_method'] == 'POS Manual'">
+                                    <t t-if="not pos_manual_flag">
+                                        <tr style="border-top: 1px dashed #ccc;">
+                                            <td colspan="2"><t t-esc="mp['payment_method']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-set="pos_manual_flag" t-value="True"/>
+                                    <t t-if="mp['amount']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Total</td>
+                                            <td style="text-align: right;"><t t-esc="mp['amount_fmt']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['sello']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Sello</td>
+                                            <td style="text-align: right;"><t t-esc="mp['sello']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['cuotas']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Cuotas</td>
+                                            <td style="text-align: right;"><t t-esc="mp['cuotas']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['ticket']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Ticket</td>
+                                            <td style="text-align: right;"><t t-esc="mp['ticket']"/></td>
+                                        </tr>
+                                    </t>
+                                    <br/>
                                 </t>
-                                <t t-if="mp['cuotas']">
-                                    <tr>
-                                        <td style="padding-left: 12px;">Cuotas</td>
-                                        <td style="text-align: right;"><t t-esc="mp['cuotas']"/></td>
-                                    </tr>
-                                </t>
-                                <t t-if="mp['ticket']">
-                                    <tr>
-                                        <td style="padding-left: 12px;">Ticket</td>
-                                        <td style="text-align: right;"><t t-esc="mp['ticket']"/></td>
-                                    </tr>
+                            </t>
+
+                            <t t-set="otros_metodos_flag" t-value="False"/>
+                            <t t-foreach="data['manual_payments']" t-as="mp">
+                                <t t-if="mp['payment_method'] == 'Otros Metodos de Pago'">
+                                    <t t-if="not otros_metodos_flag">
+                                        <tr style="border-top: 1px dashed #ccc;">
+                                            <td colspan="2"><t t-esc="mp['payment_method']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-set="otros_metodos_flag" t-value="True"/>
+                                    <t t-if="mp['amount']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Total</td>
+                                            <td style="text-align: right;"><t t-esc="mp['amount_fmt']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['sello']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Sello</td>
+                                            <td style="text-align: right;"><t t-esc="mp['sello']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['cuotas']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Cuotas</td>
+                                            <td style="text-align: right;"><t t-esc="mp['cuotas']"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="mp['ticket']">
+                                        <tr>
+                                            <td style="padding-left: 12px;">Ticket</td>
+                                            <td style="text-align: right;"><t t-esc="mp['ticket']"/></td>
+                                        </tr>
+                                    </t>
+                                    <br/>
                                 </t>
                             </t>
                         </table>
@@ -107,14 +152,14 @@
                         <table style="width: 100%; border-collapse: collapse;">
                             <t t-foreach="data['cash_movements']" t-as="cm">
                                 <tr>
-                                    <td>
+                                    <td style="width: 60%; word-wrap: break-word;">
                                         <t t-if="cm['amount'] >= 0">▲ </t>
                                         <t t-else="">▼ </t>
                                         <t t-esc="cm['reason']"/>
                                     </td>
-                                    <td style="text-align: right;">
+                                    <td style="width: 40%; text-align: right; white-space: nowrap;">
                                         <t t-if="cm['amount'] >= 0">+</t>
-                                        <t t-esc="'%.2f' % (cm['amount'] or 0.0)"/>
+                                        <t t-esc="cm['amount_fmt']"/>
                                     </td>
                                 </tr>
                             </t>
@@ -123,21 +168,26 @@
 
                     <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">SALDO FINAL DE EFECTIVO</div>
                     <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td>Saldo final de Efectivo</td>
-                            <td style="text-align: right;">
-                                <t t-esc="'%.2f' % (data['closing_total'] or 0.0)"/>
-                            </td>
-                        </tr>
-                        <t t-if="data['cash_register_difference']">
-                            <tr style="border-top: 1px solid #ccc;">
-                                <td><strong>Diferencia</strong></td>
+                        <t t-if="not data['has_cash_difference']">
+                            <tr>
+                                <td>Saldo final de Efectivo</td>
                                 <td style="text-align: right;">
-                                    <t t-esc="'%.2f' % (data['cash_register_difference'] or 0.0)"/>
+                                    <t t-esc="data['closing_total']"/>
+                                </td>
+                            </tr>
+                        </t>
+                        <t t-if="data['has_cash_difference']">
+                            <tr style="border-top: 1px solid #ccc;">
+                                <td><strong>Saldo final de Efectivo</strong></td>
+                                <td style="text-align: right;">
+                                    <t t-esc="data['closing_total_final']"/>
                                 </td>
                             </tr>
                         </t>
                     </table>
+
+
+
 
                     <t t-if="data['closing_notes']">
                         <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">NOTA DE CIERRE</div>
