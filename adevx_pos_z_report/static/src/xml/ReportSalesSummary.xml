@@ -6,9 +6,7 @@
             <div class="pos-receipt-contact">
                 <h1>REPORTE Z</h1>
             </div>
-            <div class="pos-receipt-contact">
-                <h5>SUCURSAL</h5>
-            </div>
+
             <div class="receipt-line">
                 <span>Sucursal</span>
                 <span class="pos-receipt-right-align">
@@ -70,43 +68,96 @@
                         <div class="receipt-line">
                             <t t-esc="payment_method.name"/>
                             <span class="pos-receipt-right-align">
-                                <t t-esc="payment_method.amount"/>
+                                <t t-esc="payment_method.amount_fmt"/>
                             </span>
                         </div>
                     </t>
                 </div>
             </t>
 
-            <!-- Pagos manuales (Sello, Cuotas, Importe) -->
+            <!-- Pagos manuales (Sello, Cuotas, Importe), agrupados por método de pago -->
             <t t-if="data.manual_payments and data.manual_payments.length">
                 <div class="pos-receipt-contact">
                     <h5>TRANSACCIONES MANUALES</h5>
                 </div>
                 <div class="orderlines">
+                    <t t-set="pos_manual_flag" t-value="false"/>
+<!--                    POS MANUAL-->
                     <t t-foreach="data.manual_payments" t-key="mp_index" t-as="mp">
-                        <div class="receipt-line" style="border-top: 1px dashed #ccc; padding-top: 4px;">
-                            <span><t t-esc="mp.payment_method"/></span>
-                            <span class="pos-receipt-right-align">
-                                <t t-esc="mp.amount"/>
-                            </span>
-                        </div>
-                        <t t-if="mp.sello">
-                            <div class="receipt-line">
-                                <span style="padding-left: 12px;">Sello</span>
-                                <span class="pos-receipt-right-align"><t t-esc="mp.sello"/></span>
-                            </div>
+                        <t t-if="mp.payment_method == 'POS Manual'">
+                            <t t-if="pos_manual_flag == false">
+                                <div class="receipt-line" style="border-top: 1px dashed #ccc; padding-top: 4px;">
+                                    <span><t t-esc="mp.payment_method"/></span>
+                                </div>
+                            </t>
+                            <t t-set="pos_manual_flag" t-value="true"/>
+
+                            <t t-if="mp.amount">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Total</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.amount_fmt"/></span>
+                                </div>
+                            </t>
+
+                            <t t-if="mp.sello">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Sello</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.sello"/></span>
+                                </div>
+                            </t>
+                            <t t-if="mp.cuotas">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Cuotas</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.cuotas"/></span>
+                                </div>
+                            </t>
+                            <t t-if="mp.ticket">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Ticket</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.ticket"/></span>
+                                </div>
+                            </t>
+                            <br/>
                         </t>
-                        <t t-if="mp.cuotas">
-                            <div class="receipt-line">
-                                <span style="padding-left: 12px;">Cuotas</span>
-                                <span class="pos-receipt-right-align"><t t-esc="mp.cuotas"/></span>
-                            </div>
-                        </t>
-                        <t t-if="mp.ticket">
-                            <div class="receipt-line">
-                                <span style="padding-left: 12px;">Ticket</span>
-                                <span class="pos-receipt-right-align"><t t-esc="mp.ticket"/></span>
-                            </div>
+                    </t>
+
+                    <t t-set="otros_metodos_flag" t-value="false"/>
+<!--                    OTROS METODOS DE PAGO-->
+                    <t t-foreach="data.manual_payments" t-key="mp_index" t-as="mp">
+                        <t t-if="mp.payment_method == 'Otros Metodos de Pago'">
+                            <t t-if="otros_metodos_flag == false">
+                                <div class="receipt-line" style="border-top: 1px dashed #ccc; padding-top: 4px;">
+                                    <span><t t-esc="mp.payment_method"/></span>
+                                </div>
+                            </t>
+                            <t t-set="otros_metodos_flag" t-value="true"/>
+
+                            <t t-if="mp.amount">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Total</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.amount_fmt"/></span>
+                                </div>
+                            </t>
+
+                            <t t-if="mp.sello">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Sello</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.sello"/></span>
+                                </div>
+                            </t>
+                            <t t-if="mp.cuotas">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Cuotas</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.cuotas"/></span>
+                                </div>
+                            </t>
+                            <t t-if="mp.ticket">
+                                <div class="receipt-line">
+                                    <span style="padding-left: 12px;">Ticket</span>
+                                    <span class="pos-receipt-right-align"><t t-esc="mp.ticket"/></span>
+                                </div>
+                            </t>
+                            <br/>
                         </t>
                     </t>
                 </div>
@@ -120,7 +171,7 @@
                 <div class="orderlines">
                     <t t-foreach="data.cash_movements" t-key="cm_index" t-as="cm">
                         <div class="receipt-line">
-                            <span class="text-wrap" style="max-width: 70%;">
+                            <span class="text-wrap" style="max-width: 40%;">
                                 <t t-if="cm.amount >= 0">
                                     <span style="color: green;">▲ </span>
                                 </t>
@@ -129,12 +180,12 @@
                                 </t>
                                 <t t-esc="cm.reason"/>
                             </span>
-                            <span class="pos-receipt-right-align">
+                            <span class="pos-receipt-right-align" style="white-space: nowrap;">
                                 <t t-if="cm.amount >= 0">
-                                    +<t t-esc="cm.amount"/>
+                                    +<t t-esc="cm.amount_fmt"/>
                                 </t>
                                 <t t-else="">
-                                    <t t-esc="cm.amount"/>
+                                    <t t-esc="cm.amount_fmt"/>
                                 </t>
                             </span>
                         </div>
@@ -144,7 +195,7 @@
             <div class="pos-receipt-contact">
                 <h5>SALDO FINAL DE EFECTIVO</h5>
             </div>
-            <t t-if="!data.cash_register_difference">
+            <t t-if="!data.has_cash_difference">
                 <div class="receipt-line">
                     <span>Saldo final de Efectivo</span>
                     <span class="pos-receipt-right-align">
@@ -153,11 +204,11 @@
                 </div>
             </t>
             <!-- Diferencia de caja -->
-            <t t-if="data.cash_register_difference">
+            <t t-if="data.has_cash_difference">
                 <div class="receipt-line" style="border-top: 1px solid #ccc; margin-top: 4px; padding-top: 4px;">
                     <span><strong>Saldo final de Efectivo</strong></span>
                     <span class="pos-receipt-right-align">
-                        <t t-esc="data.closing_total + data.cash_register_difference"/>
+                        <t t-esc="data.closing_total_final"/>
                     </span>
                 </div>
             </t>
