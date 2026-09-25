@@ -235,6 +235,72 @@ class PosSession(models.Model):
                 })
         return manual_payments
 
+    # ------------------------------------------------------------------
+    # Desglose por sello del PDV integrado
+    # ------------------------------------------------------------------
+
+    def _z_sello_de_transaccion(self, tx):
+        """
+        Nombre del sello (marca) de una transacción del PDV integrado.
+
+        Las marcas se modelan como ``payment.method`` hijas del método del
+        proveedor, con ``code`` igual al código de issuer del Anexo 4 de
+        POSLink; es el mismo catálogo que usa el core para resolver
+        ``issuer_name``. Se busca ahí primero porque ``issuer_name`` quedó con
+        valores crudos en las transacciones viejas (AID tipo
+        ``A0000000031010``, ``Emisor 0``) y esos no sirven para agrupar.
+
+        :param tx: ``payment.transaction``.
+        :return str: nombre de la marca, o el mejor dato disponible.
+        """
+        codigo = ""
+        if hasattr(tx, "_normalize_issuer_code"):
+            codigo = tx._normalize_issuer_code(tx.issuer_code) or ""
+        if codigo and tx.provider_id and tx.provider_id.payment_method_ids:
+            marca = self.env["payment.method"].sudo().search([
+                ("code", "=", codigo),
+                ("primary_payment_method_id", "in", tx.provider_id.payment_method_ids.ids),
+            ], limit=1)
+            if marca:
+                return marca.name
+        emv = (getattr(tx, "emv_application_name", "") or "").strip()
+        if emv:
+            return emv
+        emisor = (tx.issuer_name or "").strip()
+        if emisor:
+            return emisor
+        return _("Sin sello")
+
+    def get_integrated_payments(self):
+        """
+        Desglose por sello de los cobros del PDV integrado, agrupado.
+
+        El equivalente de lo que ya se hacía con los pagos manuales, pero para
+        las transacciones del PDV integrado (OCA/Fiserv): una línea por sello
+        con la cantidad de operaciones y el total.
+
+        Returns:
+            list: ``[{'sello', 'cantidad', 'amount', 'amount_fmt'}]`` ordenado
+            de mayor a menor importe.
+        """
+        agrupado = {}
+        for order in self.order_ids:
+            for payment in order.payment_ids:
+                tx = payment.payment_transaction_id
+                if not tx:
+                    continue
+                if getattr(tx, "is_pos_manual", False):
+                    # Los manuales ya tienen su propio bloque en el reporte.
+                    continue
+                sello = self._z_sello_de_transaccion(tx)
+                fila = agrupado.setdefault(sello, {"sello": sello, "cantidad": 0, "amount": 0.0})
+                fila["cantidad"] += 1
+                fila["amount"] += payment.amount
+        filas = sorted(agrupado.values(), key=lambda f: f["amount"], reverse=True)
+        for fila in filas:
+            fila["amount_fmt"] = self.format_currency(fila["amount"])
+        return filas
+
     def get_total_sales(self):
         total_price = 0.0
         for order in self.order_ids:
@@ -384,5 +450,6 @@ class PosSession(models.Model):
             session_report['cash_out'] = [m for m in cash_movements if m['amount'] < 0]
             # Pagos manuales (Sello, Cuotas, Importe)
             session_report['manual_payments'] = session.get_manual_payments()
+            session_report['integrated_payments'] = session.get_integrated_payments()
             vals[session.id] = session_report
         return vals

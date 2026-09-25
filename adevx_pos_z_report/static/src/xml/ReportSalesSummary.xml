@@ -76,6 +76,26 @@
             </t>
 
             <!-- Pagos manuales (Sello, Cuotas, Importe), agrupados por método de pago -->
+            <!-- Desglose por sello del PDV integrado -->
+            <t t-if="data.integrated_payments and data.integrated_payments.length">
+                <div class="pos-receipt-contact">
+                    <h5>PDV INTEGRADO POR SELLO</h5>
+                </div>
+                <div class="orderlines">
+                    <t t-foreach="data.integrated_payments" t-key="ip_index" t-as="ip">
+                        <div class="receipt-line">
+                            <span class="text-wrap" style="max-width: 65%;">
+                                <t t-esc="ip.sello"/>
+                                <t t-if="ip.cantidad"> (<t t-esc="ip.cantidad"/>)</t>
+                            </span>
+                            <span class="pos-receipt-right-align" style="white-space: nowrap;">
+                                <t t-esc="ip.amount_fmt"/>
+                            </span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
             <t t-if="data.manual_payments and data.manual_payments.length">
                 <div class="pos-receipt-contact">
                     <h5>TRANSACCIONES MANUALES</h5>

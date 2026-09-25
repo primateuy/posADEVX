@@ -67,6 +67,23 @@
                         </table>
                     </t>
 
+                    <t t-if="data['integrated_payments']">
+                        <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">PDV INTEGRADO POR SELLO</div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <t t-foreach="data['integrated_payments']" t-as="ip">
+                                <tr>
+                                    <td style="width: 60%; word-wrap: break-word;">
+                                        <t t-esc="ip['sello']"/>
+                                        <t t-if="ip['cantidad']"> (<t t-esc="ip['cantidad']"/>)</t>
+                                    </td>
+                                    <td style="width: 40%; text-align: right; white-space: nowrap;">
+                                        <t t-esc="ip['amount_fmt']"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
+                    </t>
+
                     <t t-if="data['manual_payments']">
                         <!-- Pagos manuales (Sello, Cuotas, Importe), agrupados por método de pago -->
                         <div style="text-align: center; margin: 10px 0 6px; font-weight: bold;">TRANSACCIONES MANUALES</div>
