@@ -6,6 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 import { renderToElement } from "@web/core/utils/render";
 import { usePos } from "@point_of_sale/app/store/pos_hook";
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
+import { printZReportElement } from "@adevx_pos_z_report/js/z_report_print";
 
 class ZReportButton extends Component {
     static template = 'adevx_pos_z_report.ZReportButton';
@@ -28,7 +29,7 @@ class ZReportButton extends Component {
         const report = renderToElement("adevx_pos_z_report.ReportSalesSummary", Object.assign({}, {
             pos: this.pos, data: data
         }));
-        return await this.printer.printHtml(report, { webPrintFallback: true });
+        return await printZReportElement(this.env, this.pos, this.printer, report);
     }
 }
 

@@ -4,6 +4,7 @@
     'summary': """ Point of Sale Z Report """,
     'description': """ Point of Sale Z Report """,
 
+    'version': '17.0.1.1.0',
     'category': 'Sales/Point of Sale',
     'author': 'Adevx',
     'license': "OPL-1",

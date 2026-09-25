@@ -171,13 +171,10 @@
                 <div class="orderlines">
                     <t t-foreach="data.cash_movements" t-key="cm_index" t-as="cm">
                         <div class="receipt-line">
-                            <span class="text-wrap" style="max-width: 40%;">
-                                <t t-if="cm.amount >= 0">
-                                    <span style="color: green;">▲ </span>
-                                </t>
-                                <t t-else="">
-                                    <span style="color: red;">▼ </span>
-                                </t>
+                            <!-- Sin flecha ni sentido: en el ticket el signo del
+                                 importe ya dice si entró o salió, y el color no
+                                 existe en una impresora térmica. -->
+                            <span class="text-wrap" style="max-width: 65%;">
                                 <t t-esc="cm.reason"/>
                             </span>
                             <span class="pos-receipt-right-align" style="white-space: nowrap;">

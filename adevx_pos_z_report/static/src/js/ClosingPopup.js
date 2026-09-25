@@ -8,6 +8,7 @@ import { ConnectionLostError } from "@web/core/network/rpc_service";
 import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
 import { _t } from "@web/core/l10n/translation";
 import { parseFloat } from "@web/views/fields/parsers";
+import { printZReportElement } from "@adevx_pos_z_report/js/z_report_print";
 
 patch(ClosePosPopup.prototype, {
 
@@ -28,7 +29,7 @@ patch(ClosePosPopup.prototype, {
         const report = renderToElement("adevx_pos_z_report.ReportSalesSummary", Object.assign({}, {
             pos: this.pos, data: data
         }));
-        return await this.printer.printHtml(report, { webPrintFallback: true });
+        return await printZReportElement(this.env, this.pos, this.printer, report);
     },
 
     /**

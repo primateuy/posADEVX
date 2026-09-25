@@ -1,5 +1,6 @@
 import base64
 import json as json_module
+import re
 from pytz import timezone, UTC
 from datetime import datetime, date
 from odoo import api, fields, models, _
@@ -124,16 +125,65 @@ class PosSession(models.Model):
         text = text.replace(',', '_').replace('.', ',').replace('_', '.')
         return '%s$ %s' % (sign, text)
 
+    # Bloque: partes que Odoo antepone a la razón del movimiento y que en el
+    # ticket no le dicen nada al cajero: el nombre de la sesión y el sentido.
+    # "POS/00037 - out - Comida" y "POS/00037-en-Cambio Caja" son las dos formas
+    # que aparecen en la base (con y sin espacios alrededor del guion).
+    _Z_SENTIDOS = ("out", "in", "en", "salida", "entrada")
+
+    # Bloque: el momento de la diferencia queda guardado en el idioma con el que
+    # se cerró la caja; en el ticket se quiere siempre en español.
+    _Z_MOMENTOS = {"opening": "apertura", "closing": "cierre"}
+
+    def _z_report_clean_reason(self, payment_ref):
+        """
+        Deja la razón del movimiento de caja tal como se quiere leer en el ticket.
+
+        "POS/00037 - out - Comida - Almorzada"  -> "Comida - Almorzada"
+        "POS/00037-en-Cambio Caja"              -> "Cambio Caja"
+        "Diferencia de efectivo observada durante el conteo (pérdida)- cierre"
+                                                -> "Diferencia de efectivo - cierre"
+        "POS/00037"                             -> "Ventas en efectivo"
+
+        :param str payment_ref: ``account.bank.statement.line.payment_ref``.
+        :return str: texto corto para imprimir.
+        """
+        self.ensure_one()
+        texto = " ".join((payment_ref or "").split())
+        if not texto:
+            return _("Ventas en efectivo")
+
+        # Bloque: las diferencias de conteo traen la frase entera del core más el
+        # momento. Se conserva sólo "Diferencia de efectivo" y ese momento.
+        bajo = texto.lower()
+        if bajo.startswith("diferencia de efectivo") or bajo.startswith("cash difference"):
+            momento = ""
+            corte = re.search(r"[)\]]\s*-\s*(.+)$", texto)
+            if corte:
+                # El momento quedó guardado en el idioma de quien cerró la caja.
+                momento = " - %s" % self._Z_MOMENTOS.get(
+                    corte.group(1).strip().lower(), corte.group(1).strip()
+                )
+            return "%s%s" % (_("Diferencia de efectivo"), momento)
+
+        # Bloque: quitar el nombre de la sesión y, detrás, el sentido.
+        if self.name and texto.startswith(self.name):
+            texto = texto[len(self.name):].lstrip(" -")
+            primero, sep, resto = texto.partition("-")
+            if sep and primero.strip().lower() in self._Z_SENTIDOS:
+                texto = resto.lstrip(" -")
+
+        texto = texto.strip(" -")
+        return texto or _("Ventas en efectivo")
+
     def get_cash_in_out(self):
         """Retorna todos los movimientos de caja (IN y OUT) con razón/concepto."""
         movements = []
         for line in self.statement_line_ids.sorted('create_date'):
-            # payment_ref tiene formato: "SessionName-Tipo-Razón" o solo la razón
-            reason = line.payment_ref or ''
             movements.append({
                 'amount': line.amount,
                 'amount_fmt': self.format_currency(line.amount),
-                'reason': reason,
+                'reason': self._z_report_clean_reason(line.payment_ref),
                 'date': str(line.date) if line.date else '',
             })
         return movements

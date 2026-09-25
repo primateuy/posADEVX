@@ -153,8 +153,8 @@
                             <t t-foreach="data['cash_movements']" t-as="cm">
                                 <tr>
                                     <td style="width: 60%; word-wrap: break-word;">
-                                        <t t-if="cm['amount'] >= 0">▲ </t>
-                                        <t t-else="">▼ </t>
+                                        <!-- Sin flecha: el signo del importe ya
+                                             dice si el movimiento entró o salió. -->
                                         <t t-esc="cm['reason']"/>
                                     </td>
                                     <td style="width: 40%; text-align: right; white-space: nowrap;">
